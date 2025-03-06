@@ -129,28 +129,48 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
   bookmarks_html = ''
 
   if bookmarks:
-    start = bookmarks[0]['children'][0]['children']
+    start = bookmarks[0]['children']
+    if 'children' in start[0]:
+      start = start[0]['children']
+
     bookmarks_html = process_nested_bookmarks(start)
 
   final_html = f'''<!DOCTYPE html>
 <html>
 <head>
   <title>Bookmarks.py</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
      body {{ padding:0;margin:0; }}
     .bookmarks-bar {{ padding:3px;border-bottom:1px solid #ccc; }}
     .bookmarks-bar a,
-    .bookmarks-bar span {{ text-decoration:none;display:inline-block;padding:3px 8px 3px 4px;font:12px arial;color:#333;border-radius:5px; }}
+    .bookmarks-bar span {{
+      text-decoration:none;display:inline-block;padding:3px 8px 3px 4px;
+      font:12px arial;color:#333;border-radius:5px;
+    }}
     .bookmarks-bar a:hover,
     .bookmarks-bar span:hover {{ background:#eee; }}
     .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle; }}
     .bookmarks-bar span {{ cursor:pointer; }}
     .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
-    .bookmarks-bar .holder {{ position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;border:1px solid #ccc;border-radius:5px; }}
+    .bookmarks-bar .holder {{ 
+      position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;
+      border:1px solid #ccc;border-radius:5px;box-shadow:1px 2px 8px #ddd;
+    }}
     .bookmarks-bar .holder a,
     .bookmarks-bar .holder span {{ display:block;margin:0 0 2px; }}
-    .folder {{ width:16px;height:8px;margin-right:5px;position:relative;margin-bottom:-3px;border:1px solid #999;border-radius:0 2px 2px 2px;display:inline-block; }}
-    .folder:before {{ content:'';width:80%;height:3px;border-radius:0 2px 0 0;background-color:#ccc;position: absolute;top:-4px;left:-1px; }}
+    .folder {{ 
+      width:16px;height:8px;margin-right:5px;position:relative;margin-bottom:-3px;
+      border:1px solid #999;border-radius:0 2px 2px 2px;display:inline-block;
+    }}
+    .folder:before {{
+      content:'';width:80%;height:3px;border-radius:0 2px 0 0;background-color:#ccc;
+      position: absolute;top:-4px;left:-1px;
+    }}
+    @media (max-width: 580px) {{
+      .bookmarks-bar a,
+      .bookmarks-bar span {{ margin-bottom:6px; }}
+    }}
   </style>
 </head>
 <body>
@@ -162,19 +182,31 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
   const folder_btns = document.querySelectorAll(".folder-button");
   let one_opened = false;
 
+  function toggleHolder(holder) {{
+    if ( holder.style.display == "none" ) {{
+      const holderstyle = window.getComputedStyle(holder);
+      const parentrect = holder.parentElement.getBoundingClientRect();
+      const holdermax = parseInt(holderstyle.width) + parentrect.left;
+      const allowedmax = window.innerWidth - 10;
+      if ( holdermax > allowedmax ) {{
+        holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
+        holder.style.right = "auto";
+      }}
+      holder.style.display = "block";
+      one_opened = true;
+    }} else {{
+      holder.style.display = "none";
+      one_opened = false;
+    }}
+  }}
+
   if ( folder_btns.length ) {{
     for ( var i = 0; i < folder_btns.length; i++ ) {{
 
       folder_btns[i].addEventListener("click", function(){{
         const parent = this.parentElement;
         const holder = parent.querySelector(".holder");
-        if ( holder.style.display == "none" ) {{
-          holder.style.display = "block";
-          one_opened = true;
-        }} else {{
-          holder.style.display = "none";
-          one_opened = false;
-        }}
+        toggleHolder(holder);
       }});
 
 
@@ -184,19 +216,11 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
         if ( one_opened == true ) {{
           const all_holders = document.querySelectorAll(".holder");
           for ( var j = 0; j < all_holders.length; j++ ) {{
-            if ( all_holders[j] !== holder && all_holders[j].contains(holder) ) {{
-              // keep parent visible
-            }} else {{
+            if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
               all_holders[j].style.display = "none";
             }}
           }}
-          if ( holder.style.display == "none" ) {{
-            holder.style.display = "block";
-            one_opened = true;
-          }} else {{
-            holder.style.display = "none";
-            one_opened = false;
-          }}
+          toggleHolder(holder);
         }}
       }});
 

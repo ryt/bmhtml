@@ -179,8 +179,10 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
 </div>
 <script>
 
-  const folder_btns = document.querySelectorAll(".folder-button");
-  let one_opened = false;
+  const bookmarks_bar = document.querySelector(".bookmarks-bar");
+  const folder_btns   = document.querySelectorAll(".folder-button");
+  const all_holders   = document.querySelectorAll(".holder");
+  let one_opened      = false;
 
   function toggleHolder(holder) {{
     if ( holder.style.display == "none" ) {{
@@ -214,7 +216,6 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
         const parent = this.parentElement;
         const holder = parent.querySelector(".holder");
         if ( one_opened == true ) {{
-          const all_holders = document.querySelectorAll(".holder");
           for ( var j = 0; j < all_holders.length; j++ ) {{
             if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
               all_holders[j].style.display = "none";
@@ -227,6 +228,15 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
 
     }}
   }}
+
+  document.addEventListener("click", function(){{
+    if ( !bookmarks_bar.contains(event.target) ) {{
+      for ( var j = 0; j < all_holders.length; j++ ) {{
+        all_holders[j].style.display = "none";
+        one_opened = false;
+      }}
+    }}
+  }});
 
 </script>
 </body>

@@ -127,13 +127,14 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
     html_content = file.read()
   bookmarks = parse_bookmarks(html_content)
   bookmarks_html = ''
+  bookmarks_object = json.dumps(bookmarks, indent=2)
 
-  if bookmarks:
-    start = bookmarks[0]['children']
-    if 'children' in start[0]:
-      start = start[0]['children']
+  #if bookmarks:
+  #  start = bookmarks[0]['children']
+  #  if 'children' in start[0]:
+  #    start = start[0]['children']
 
-    bookmarks_html = process_nested_bookmarks(start)
+  #  bookmarks_html = process_nested_bookmarks(start)
 
   final_html = f'''<!DOCTYPE html>
 <html>
@@ -174,9 +175,43 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
   </style>
 </head>
 <body>
-<div class="bookmarks-bar">
-{bookmarks_html}
-</div>
+<script>
+
+const bookmarks = {bookmarks_object};
+
+function process_nested_bookmarks(parent) {{
+  let bookmarks_html = ''
+  for ( const key in parent ) {{
+    const elem = parent[key];
+    if ( elem['type'] == 'link' ) {{
+      let el_name = elem['name'];
+      let el_href = elem['attrs']['href'];
+      let el_icon = 'icon' in elem['attrs'] ? elem['attrs']['icon'] : '';
+      bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
+    }} else if ( elem['type'] == 'folder' ) {{
+      let el_name = elem['name'];
+      bookmarks_html += '<div class="parent">'
+      bookmarks_html += '<span class="folder-button"><i class="folder"></i>' + el_name + '</span>';
+      if ( elem['children'] && elem['children'].length > 0 ) {{
+        bookmarks_html += '<div class="holder" style="display:none;">' + process_nested_bookmarks(elem['children']) + '</div>';
+      }}
+      bookmarks_html += '</div>';
+    }}
+  }}
+  return bookmarks_html;
+}}
+
+if ( bookmarks ){{
+  let start = bookmarks[0]['children'];
+  if ( 'children' in start[0] ) {{
+    start = start[0]['children'];
+  }}
+  bookmarks_html = process_nested_bookmarks(start);
+  document.write('<div class="bookmarks-bar">' + bookmarks_html + '</div>');
+}}
+
+</script>
+
 <script>
 
   const bookmarks_bar = document.querySelector(".bookmarks-bar");

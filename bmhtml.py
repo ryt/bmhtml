@@ -1,36 +1,39 @@
 #!/usr/bin/env python3
 
-# Bookmarks.py
-# Copyright (C) 2024 Ray Mentose. 
-# Latest source can be found at: https://github.com/ryt/bookmarks.py
+# bmhtml - cross-platform bookmarks exporter & editor
+# Latest source can be found at: https://github.com/ryt/bmhtml
 
-v = '0.0.1'
-c = 'Copyright (C) 2024 Ray Mentose.'
+v = '0.0.2'
+c = 'Copyright (C) 2024 Ray Mentose'
 man = """
-Bookmarks.py: A tool that creates a portable, optimized html bookmarks bar from your bookmark exports.
-Copyright (C) 2024 Ray Mentose. Latest source: https://github.com/ryt/bookmarks.py
+bmhtml: A tool that creates a portable, optimized, cross-browser html-bookmarks-bar from your bookmark exports.
+Copyright (C) 2024 Ray Mentose. Latest source: https://github.com/ryt/bmhtml
 
 Usage:
 
   Run on exported bookmarks html file.
 
-  Run               Input                   Output (optional)
+  Run             Input                   Output (optional)
   -----------------------------------------------------------
-  ./bookmarks.py    (bookmark_file.html)    bookmarks.py.html
+  ./bmhtml.py     bookmark_file.html      bmhtml_file.html
 
 
   Help manual and version.
   ---------------------------------------
-  ./bookmarks.py     (man|help|-h|--help)
-  ./bookmarks.py     (-v|--version)
+  ./bmhtml.py     (man|help|-h|--help)
+  ./bmhtml.py     (-v|--version)
 
 """
+
+# --- libraries --- #
 
 import os
 import re
 import sys
 import json
 
+
+# --- cli mode --- #
 
 def parse_bookmarks(html):
   bookmarks = []
@@ -121,7 +124,7 @@ def process_nested_bookmarks(parent):
   return bookmarks_html
 
 
-def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
+def process_bookmarks_file(input, output='bookmarks.html', third=''):
 
   with open(input, 'r', encoding='utf-8') as file:
     html_content = file.read()
@@ -139,7 +142,10 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
   final_html = f'''<!DOCTYPE html>
 <html>
 <head>
-  <title>Bookmarks.py</title>
+<script>
+const bookmarks = {bookmarks_object};
+</script>
+  <title>Bookmarks</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
      body {{ padding:0;margin:0; }}
@@ -176,8 +182,6 @@ def process_bookmarks_file(input, output='bookmarks.py.html', third=''):
 </head>
 <body>
 <script>
-
-const bookmarks = {bookmarks_object};
 
 function process_nested_bookmarks(parent) {{
   let bookmarks_html = ''

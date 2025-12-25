@@ -1,44 +1,51 @@
-# bookmarks.py
+# bmhtml - HTML Bookmark Bar Generator
+
 A tool that creates a portable, optimized html bookmarks bar from your bookmark exports.
 
 #### Install
 
-After downloading, you can call the script directly at `./bookmarks.py`.
+After downloading, you can call the script directly at `./bmhtml.py`.
 
 You can also create an alias for faster access. If you're using bash, add the following to your aliases:
 
 ```console
-alias bookmarks.py='{install}/bookmarks.py/bookmarks.py'
+alias bmhtml='{install}/bmhtml/bmhtml.py'
 ```
 
 > Note: Depending on your system, aliases may be found in `~/.bashrc`, `~/.bash_aliases` or `~/.bash_profile`. For other shells, use the corresponding config file: e.g. `~/.zshrc`.
 
 #### Usage
 
+There are two types of bookmarks html files that are used with bmhtml:
 
-##### Run on exported bookmarks html file. Output name is optional.
+1. Browser bookmarks html files (i.e. **Netscape bookmarks files**) that are exported from Chrome, Firefox, Opera, etc.
+2. **bmhtml** files which are html files that mimic a browser bookmark via JavaScript and CSS functionality.
 
-> bookmarks.py {input}  
+##### Run on browser exported bookmarks html file. Output name is optional.
+
+If no output name is given, the existing bookmarks html file is converted to a bmhtml file.
+
+> bmhtml.py {input}  
 
 ```console
-bookmarks.py bookmark_file.html
+bmhtml.py bookmark_file.html
 ```
 
-> bookmarks.py {input} {output}
+> bmhtml.py {input} {output}
 
 ```console
-bookmarks.py bookmark_file.html bookmarks.py.html
+bmhtml.py bookmark_file.html bmhtml_file.html
 ```
 
-The new `bookmarks.py.html` or custom named file will be created in the same directory as your input file. If output name is specified and the path is different, it will be created in the output path.
+The new `bmhtml_file.html` or custom named file will be created in the same directory as your input file. If output name is specified and the path is different, it will be created in the output path.
 
 
 
 ##### Show the help manual.
 
 ```console
-bookmarks.py
-bookmarks.py  man|help
+bmhtml.py
+bmhtml.py  man|help
 ```
 
 

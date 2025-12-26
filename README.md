@@ -19,25 +19,25 @@ alias bmhtml='{install}/bmhtml/bmhtml.py'
 There are two types of bookmarks html files that are used with bmhtml:
 
 1. Browser bookmarks html files (i.e. **Netscape bookmarks files**) that are exported from Chrome, Firefox, Opera, etc.
-2. **bmhtml** files which are html files that mimic a browser bookmark via JavaScript and CSS functionality.
+2. **bmhtml** files which are portable html files that mimic a browser bookmark via JavaScript and CSS functionality.
 
 ##### Run on browser exported bookmarks html file. Output name is optional.
 
-If no output name is given, the existing bookmarks html file is converted to a bmhtml file.
+If no output name is given, the existing bookmarks html file is converted to a portable bmhtml file.
 
 > bmhtml.py {input}  
 
 ```console
-bmhtml.py bookmark_file.html
+bmhtml.py bookmark_export.html
 ```
 
 > bmhtml.py {input} {output}
 
 ```console
-bmhtml.py bookmark_file.html bmhtml_file.html
+bmhtml.py bookmark_export.html portable.html
 ```
 
-The new `bmhtml_file.html` or custom named file will be created in the same directory as your input file. If output name is specified and the path is different, it will be created in the output path.
+The new `portable.html` or custom named file will be created in the same directory as your input file. If output name is specified and the path is different, it will be created in the output path.
 
 
 

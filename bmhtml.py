@@ -14,8 +14,8 @@ Usage:
   Run on exported bookmarks html file.
 
   Run             Input                   Output (optional)
-  -----------------------------------------------------------
-  ./bmhtml.py     bookmark_file.html      bmhtml_file.html
+  ---------------------------------------------------------
+  ./bmhtml.py     bookmark_export.html    portable.html
 
 
   Help manual and version.

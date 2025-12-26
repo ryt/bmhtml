@@ -35,10 +35,24 @@ import json
 
 # --- cli mode --- #
 
+def substitute_icons(obj, uicons):
+  if isinstance(obj, dict):
+    for k, v in obj.items():
+      if k == 'icon' and v in uicons:
+        obj[k] = uicons.index(v)
+      else:
+        substitute_icons(v, uicons)
+  elif isinstance(obj, list):
+    for item in obj:
+      substitute_icons(item, uicons)
+  return obj
+
+
 def parse_bookmarks(html):
   bookmarks = []
   stack = []
   headers = []
+  icons = []
 
   html = re.sub(r'\n', '', html)
   html = re.sub(r'\s+', ' ', html)
@@ -50,6 +64,7 @@ def parse_bookmarks(html):
 
   for line in html:
 
+    # -- folders -- #
     if line.startswith('<DL><p>'):
       fold_name = headers[-1]['title'] if headers else ''
       fold_attr = headers[-1]['attrs'] if headers else {}
@@ -65,6 +80,7 @@ def parse_bookmarks(html):
         bookmarks.append(new_folder)
       stack.append(new_folder)
 
+    # -- titles -- #
     elif line.startswith('<DT><H3'):
       title = re.sub(r'<DT><H3.*?>(.*?)</H3>', r'\1', line)
       attrs_raw = re.sub(r'<DT><H3(.*?)>.*?</H3>', r'\1', line).strip().split(' ')
@@ -78,6 +94,7 @@ def parse_bookmarks(html):
         'attrs' : attrs
       })
 
+    # -- links -- #
     elif line.startswith('<DT><A'):
       title = re.sub(r'<DT><A.*?>(.*?)</A>', r'\1', line)
       attrs_raw = re.sub(r'<DT><A(.*?)>.*?</A>', r'\1', line).strip().split(' ')
@@ -91,59 +108,36 @@ def parse_bookmarks(html):
         'type'  : 'link',
         'attrs' : attrs,
       }
+      if 'icon' in attrs and 'href' in attrs:
+        icons.append(attrs['icon']) # add icon to list
       if stack:
         stack[-1]['children'].append(new_child)
 
+    # -- closers -- #
     elif line.startswith('</DL>'):
       if stack:
         stack.pop()
 
-  return bookmarks
+  # -- make unique icons list & substitute icons -- #
+  uicons = list(set(icons))
+  substitute_icons(bookmarks, uicons)
 
-
-
-def process_nested_bookmarks(parent):
-  """Recursively process nested bookmarks"""
-
-  bookmarks_html = ''
-
-  for elem in parent:
-    if elem['type'] == 'link':
-      el_name = elem['name']
-      el_href = elem['attrs']['href']
-      el_icon = elem['attrs']['icon'] if 'icon' in elem['attrs'] else ''
-      bookmarks_html += f'<a href="{el_href}"><img src="{el_icon}" />{el_name}</a>\n'
-    elif elem['type'] == 'folder':
-      el_name = elem['name']
-      bookmarks_html += '<div class="parent">'
-      bookmarks_html += f'<span class="folder-button"><i class="folder"></i>{el_name}</span>\n'
-      if elem['children'] and len(elem['children']) > 0:
-        bookmarks_html += '<div class="holder" style="display:none;">' + process_nested_bookmarks(elem['children']) + '</div>'
-      bookmarks_html += '</div>'
-
-  return bookmarks_html
+  return (bookmarks, uicons)
 
 
 def process_bookmarks_file(input, output='bookmarks.html', third=''):
 
   with open(input, 'r', encoding='utf-8') as file:
     html_content = file.read()
-  bookmarks = parse_bookmarks(html_content)
-  bookmarks_html = ''
-  bookmarks_object = json.dumps(bookmarks, indent=2)
-
-  #if bookmarks:
-  #  start = bookmarks[0]['children']
-  #  if 'children' in start[0]:
-  #    start = start[0]['children']
-
-  #  bookmarks_html = process_nested_bookmarks(start)
-
+  parsed = parse_bookmarks(html_content)
+  bookmarks_object = json.dumps(parsed[0], indent=2)
+  icons_object = json.dumps(parsed[1], indent=1)
   final_html = f'''<!DOCTYPE html>
 <html>
 <head>
 <script>
 const bookmarks = {bookmarks_object};
+const icons = {icons_object};
 </script>
   <title>Bookmarks</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -183,6 +177,10 @@ const bookmarks = {bookmarks_object};
 <body>
 <script>
 
+function get_icon(i) {{
+  return icons[i];
+}}
+
 function process_nested_bookmarks(parent) {{
   let bookmarks_html = ''
   for ( const key in parent ) {{
@@ -190,7 +188,7 @@ function process_nested_bookmarks(parent) {{
     if ( elem['type'] == 'link' ) {{
       let el_name = elem['name'];
       let el_href = elem['attrs']['href'];
-      let el_icon = 'icon' in elem['attrs'] ? elem['attrs']['icon'] : '';
+      let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : '';
       bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
     }} else if ( elem['type'] == 'folder' ) {{
       let el_name = elem['name'];
@@ -215,67 +213,66 @@ if ( bookmarks ){{
 }}
 
 </script>
-
 <script>
 
-  const bookmarks_bar = document.querySelector(".bookmarks-bar");
-  const folder_btns   = document.querySelectorAll(".folder-button");
-  const all_holders   = document.querySelectorAll(".holder");
-  let one_opened      = false;
+const bookmarks_bar = document.querySelector(".bookmarks-bar");
+const folder_btns   = document.querySelectorAll(".folder-button");
+const all_holders   = document.querySelectorAll(".holder");
+let one_opened      = false;
 
-  function toggleHolder(holder) {{
-    if ( holder.style.display == "none" ) {{
-      const holderstyle = window.getComputedStyle(holder);
-      const parentrect = holder.parentElement.getBoundingClientRect();
-      const holdermax = parseInt(holderstyle.width) + parentrect.left;
-      const allowedmax = window.innerWidth - 10;
-      if ( holdermax > allowedmax ) {{
-        holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
-        holder.style.right = "auto";
+function toggleHolder(holder) {{
+  if ( holder.style.display == "none" ) {{
+    const holderstyle = window.getComputedStyle(holder);
+    const parentrect = holder.parentElement.getBoundingClientRect();
+    const holdermax = parseInt(holderstyle.width) + parentrect.left;
+    const allowedmax = window.innerWidth - 10;
+    if ( holdermax > allowedmax ) {{
+      holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
+      holder.style.right = "auto";
+    }}
+    holder.style.display = "block";
+    one_opened = true;
+  }} else {{
+    holder.style.display = "none";
+    one_opened = false;
+  }}
+}}
+
+if ( folder_btns.length ) {{
+  for ( var i = 0; i < folder_btns.length; i++ ) {{
+
+    folder_btns[i].addEventListener("click", function(){{
+      const parent = this.parentElement;
+      const holder = parent.querySelector(".holder");
+      toggleHolder(holder);
+    }});
+
+
+    folder_btns[i].addEventListener("mouseover", function(){{
+      const parent = this.parentElement;
+      const holder = parent.querySelector(".holder");
+      if ( one_opened == true ) {{
+        for ( var j = 0; j < all_holders.length; j++ ) {{
+          if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
+            all_holders[j].style.display = "none";
+          }}
+        }}
+        toggleHolder(holder);
       }}
-      holder.style.display = "block";
-      one_opened = true;
-    }} else {{
-      holder.style.display = "none";
+    }});
+
+
+  }}
+}}
+
+document.addEventListener("click", function(){{
+  if ( !bookmarks_bar.contains(event.target) ) {{
+    for ( var j = 0; j < all_holders.length; j++ ) {{
+      all_holders[j].style.display = "none";
       one_opened = false;
     }}
   }}
-
-  if ( folder_btns.length ) {{
-    for ( var i = 0; i < folder_btns.length; i++ ) {{
-
-      folder_btns[i].addEventListener("click", function(){{
-        const parent = this.parentElement;
-        const holder = parent.querySelector(".holder");
-        toggleHolder(holder);
-      }});
-
-
-      folder_btns[i].addEventListener("mouseover", function(){{
-        const parent = this.parentElement;
-        const holder = parent.querySelector(".holder");
-        if ( one_opened == true ) {{
-          for ( var j = 0; j < all_holders.length; j++ ) {{
-            if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
-              all_holders[j].style.display = "none";
-            }}
-          }}
-          toggleHolder(holder);
-        }}
-      }});
-
-
-    }}
-  }}
-
-  document.addEventListener("click", function(){{
-    if ( !bookmarks_bar.contains(event.target) ) {{
-      for ( var j = 0; j < all_holders.length; j++ ) {{
-        all_holders[j].style.display = "none";
-        one_opened = false;
-      }}
-    }}
-  }});
+}});
 
 </script>
 </body>

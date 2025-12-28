@@ -39,7 +39,7 @@ bmhtml bookmarks.html bookmarks-portable.html
 ...
 
 ```
-> Writing to file "bookmarks-portable.html" successful.
+> Writing to file "bookmarks-portable.html" successful. Conversion: browser -> bmhtml.
 ```
 
 **Option 2:** If no output path is given, the converted portable file will use a `-bm.html` suffix.
@@ -52,7 +52,7 @@ bmhtml bookmarks.html
 ...
 
 ```
-> Writing to file "bookmarks-bm.html" successful.
+> Writing to file "bookmarks-bm.html" successful. Conversion: browser -> bmhtml.
 ```
 
 **Option 3:** If the replace option is used (i.e. `replace` or `r`) as the ouput path, the existing file is converted and replaced with the generated file.
@@ -67,7 +67,7 @@ bmhtml bookmarks.html replace
 ...
 
 ```console
-> Replacing file "bookmarks.html" successful.
+> Replacing file "bookmarks.html" successful. Conversion: browser -> bmhtml.
 ```
 
 ##### 2. Convert bmhtml file to browser based (i.e. Netscape) bookmarks file.
@@ -82,7 +82,7 @@ bmhtml bookmarks-bm.html chrome-import.html
 ...
 
 ```
-> Writing to file "chrome-import.html" successful.
+> Writing to file "chrome-import.html" successful. Conversion: bmhtml -> browser.
 ```
 
 **Option 2:** No output path, convert & generate using default suffix. When no output path is given, the suffix `-browser.html` is used for the generated file.
@@ -94,7 +94,7 @@ bmhtml bookmarks.html
 ...
 
 ```
-> Writing to file "bookmarks-browser.html" successful.
+> Writing to file "bookmarks-browser.html" successful. Conversion: bmhtml -> browser.
 ```
 > *If the input path has a `-bm` suffix, it'll be replaced in the ouput path as well.*
 
@@ -108,9 +108,9 @@ bmhtml firefox-favorites.html r
 ...
 
 ```
-> Replacing file "bookmarks.html" successful.
-> Replacing file "bookmarks-bm.html" successful.
-> Replacing file "firefox-favorites.html" successful.
+> Replacing file "bookmarks.html" successful. Conversion: bmhtml -> browser.
+> Replacing file "bookmarks-bm.html" successful. Conversion: bmhtml -> browser.
+> Replacing file "firefox-favorites.html" successful. Conversion: bmhtml -> browser.
 ```
 
 

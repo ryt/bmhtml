@@ -253,7 +253,7 @@ function process_nested_bookmarks(parent) {{
       let el_name = elem['name'] ? elem['name'] : '<strong class="placeholder"></strong>';
       let el_href = elem['attrs']['href'];
       let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : empty_img;
-      bookmarks_html += '<a href="' + el_href + '" target="_blank"><img src="' + el_icon + '" />' + el_name + '</a>';
+      bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
     }} else if ( elem['type'] == 'folder' ) {{
       let el_name = elem['name'];
       bookmarks_html += '<div class="parent">'

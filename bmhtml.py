@@ -291,12 +291,11 @@ function toggleHolder(holder) {{
     const holdermax = parseInt(holderstyle.width) + parentrect.left;
     const allowedmax = window.innerWidth - 10;
     if ( holder.parentElement?.parentElement.classList.contains('holder') ) {{ // ancestor (grandparent) has class 'holder'
-      let folderleft = parentrect.width;
-      if ( (folderleft + parentrect.left) > allowedmax - 20 ) {{
-        folderleft = (folderleft * -1) - 20;
+      let openfolder_maxright = parentrect.width + holdermax;
+      if ( openfolder_maxright < allowedmax ) {{
+        holder.style.left = parentrect.width + 'px';
+        holder.style.top = '0px';
       }}
-      holder.style.left = folderleft + 'px';
-      holder.style.top = '0px';
     }}
     if ( holdermax > allowedmax ) {{
       holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";

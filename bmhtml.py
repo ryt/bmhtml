@@ -3,11 +3,11 @@
 # bmhtml - cross-platform bookmarks exporter & editor
 # Latest source can be found at: https://github.com/ryt/bmhtml
 
-v = '0.0.2'
+v = '0.1.0'
 c = 'copyright (c) 2024 ray mentose'
 man = """
 bmhtml: A tool that creates a portable, optimized, cross-browser html bookmarks-bar from your bookmark exports.
-Latest source & instructions: https://github.com/ryt/bmhtml
+Latest source & docs: https://github.com/ryt/bmhtml
 
 Usage:
 
@@ -17,7 +17,7 @@ Usage:
   ---------------------------------------------------------
   ./bmhtml.py     bookmarks.html    bookmarks-portable.html
   ./bmhtml.py     bookmarks.html
-  ./bmhtml.py     bookmarks.html    replace|r
+  ./bmhtml.py     bookmarks.html    r | replace
 
 
   Help manual and version.
@@ -49,12 +49,46 @@ def substitute_icons(obj, uicons):
       substitute_icons(item, uicons)
   return obj
 
+def attrs_to_html(attrs):
+  html = ''
+  if isinstance(attrs, dict):
+    for k, v in attrs.items():
+      html += f'{k.upper()}="{v}" '
+  return html.strip()
+
+
+def convert_bmhtml_objects_html(bookmarks, uicons, i=1):
+  '''
+  <DL><p> (opens folder)
+    <DT><H3 {attrs}>{name}</H3> (folders, no closing DT)
+    <DT><A {attrs}>{name}</A> (links, no closing DT)
+  </DL><p> (closes folder, open closing p)
+  '''
+  tab  = ('  '*i)
+  html = ''
+  if bookmarks and uicons:
+    for bk in bookmarks:
+      if bk.get('type') == 'folder':
+        if not bk.get('name') and not bk.get('attrs'): # main outer DL: no name, no attrs
+          if bk.get('children') and len(bk.get('children')):
+            html += '<DL><p>\n' + convert_bmhtml_objects_html(bk.get('children'), uicons, i+1) + '</DL><p>\n'
+        elif bk.get('name') and bk.get('attrs'): # inner DLs: name, attrs
+          html += f'{tab}<DT><H3 {attrs_to_html(bk.get('attrs'))}>{bk.get('name')}</H3>\n'
+          if bk.get('children') and len(bk.get('children')):
+            html += f'{tab}<DL><p>\n' + convert_bmhtml_objects_html(bk.get('children'), uicons, i+1) + f'{tab}</DL><p>\n'
+      elif bk.get('type') == 'link':
+        link_attrs = bk.get('attrs')
+        if 'icon' in link_attrs:
+          link_attrs['icon'] = uicons[link_attrs['icon']]
+        html += f'{tab}<DT><A {attrs_to_html(link_attrs)}>{bk.get('name')}</A>\n'
+  return html
+
 
 def parse_bookmarks(html):
   bookmarks = []
-  stack = []
-  headers = []
-  icons = []
+  stack     = []
+  headers   = []
+  icons     = []
 
   html = re.sub(r'\n', '', html)
   html = re.sub(r'\s+', ' ', html)
@@ -62,9 +96,31 @@ def parse_bookmarks(html):
   html = re.sub(r'<([pP])>', r'<\1>\n', html)
   html = re.sub(r'</(h1|H1|h3|H3|a|A)>', r'</\1>\n', html)
 
+  title_match = re.search(r'<title\s*>(.*?)</title\s*>', html, re.IGNORECASE | re.DOTALL)
+  page_title  = title_match.group(1).strip() if title_match else ''
+
   html = html.split('\n')
 
   for line in html:
+
+    '''
+
+    # -- head structure -- #
+
+    <!DOCTYPE>
+    <!-- comment -->
+    <META>
+    <TITLE>{page_title}</TITLE>
+    <H1>{header_title}</H1>
+
+    # -- body structure -- #
+
+    <DL><p> (opens folder)
+      <DT><H3 {attrs}>{name}</H3> (folders, no closing DT)
+      <DT><A {attrs}>{name}</A> (links, no closing DT)
+    </DL><p> (closes folder, open closing p)
+
+    '''
 
     # -- folders -- #
     if line.startswith('<DL><p>'):
@@ -124,7 +180,191 @@ def parse_bookmarks(html):
   uicons = list(set(icons))
   substitute_icons(bookmarks, uicons)
 
-  return (bookmarks, uicons)
+  return (bookmarks, uicons, page_title)
+
+
+def convert_browser_bmhtml(html_content):
+  # -- convert from browser -> bmhtml -- #
+  parsed = parse_bookmarks(html_content)
+  bookmarks_object = json.dumps(parsed[0], indent=2)
+  icons_object = json.dumps(parsed[1], indent=1)
+  page_title = parsed[2]
+  final_html = f'''<!DOCTYPE html>
+<html>
+<head>
+<title>{page_title}</title>
+<script>
+const bookmarks = {bookmarks_object};
+const icons = {icons_object};
+</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <style>
+     body {{ padding:0;margin:0; }}
+    .bookmarks-bar {{ padding:3px;border-bottom:1px solid #ccc; }}
+    .bookmarks-bar a,
+    .bookmarks-bar span {{
+      text-decoration:none;display:inline-block;padding:3px 8px 3px 4px;
+      font:12px arial;color:#333;border-radius:5px;
+    }}
+    .bookmarks-bar a:hover,
+    .bookmarks-bar span:hover {{ background:#eee; }}
+    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle; }}
+    .bookmarks-bar span {{ cursor:pointer; }}
+    .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
+    .bookmarks-bar .holder {{ 
+      position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;
+      border:1px solid #ccc;border-radius:5px;box-shadow:1px 2px 8px #ddd;
+    }}
+    .bookmarks-bar .holder a,
+    .bookmarks-bar .holder span {{ display:block;margin:0 0 2px; }}
+    .folder {{ 
+      width:16px;height:8px;margin-right:5px;position:relative;margin-bottom:-3px;
+      border:1px solid #999;border-radius:0 2px 2px 2px;display:inline-block;
+    }}
+    .folder:before {{
+      content:'';width:80%;height:3px;border-radius:0 2px 0 0;background-color:#ccc;
+      position: absolute;top:-4px;left:-1px;
+    }}
+    @media (max-width: 580px) {{
+      .bookmarks-bar a,
+      .bookmarks-bar span {{ margin-bottom:6px; }}
+    }}
+  </style>
+</head>
+<body>
+<script>
+
+function get_icon(i) {{
+  return icons[i];
+}}
+
+function process_nested_bookmarks(parent) {{
+  let bookmarks_html = ''
+  for ( const key in parent ) {{
+    const elem = parent[key];
+    if ( elem['type'] == 'link' ) {{
+      let el_name = elem['name'];
+      let el_href = elem['attrs']['href'];
+      let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : '';
+      bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
+    }} else if ( elem['type'] == 'folder' ) {{
+      let el_name = elem['name'];
+      bookmarks_html += '<div class="parent">'
+      bookmarks_html += '<span class="folder-button"><i class="folder"></i>' + el_name + '</span>';
+      if ( elem['children'] && elem['children'].length > 0 ) {{
+        bookmarks_html += '<div class="holder" style="display:none;">' + process_nested_bookmarks(elem['children']) + '</div>';
+      }}
+      bookmarks_html += '</div>';
+    }}
+  }}
+  return bookmarks_html;
+}}
+
+if ( bookmarks ){{
+  let start = bookmarks[0]['children'];
+  if ( 'children' in start[0] ) {{
+    start = start[0]['children'];
+  }}
+  bookmarks_html = process_nested_bookmarks(start);
+  document.write('<div class="bookmarks-bar">' + bookmarks_html + '</div>');
+}}
+
+</script>
+<script>
+
+const bookmarks_bar = document.querySelector(".bookmarks-bar");
+const folder_btns   = document.querySelectorAll(".folder-button");
+const all_holders   = document.querySelectorAll(".holder");
+let one_opened      = false;
+
+function toggleHolder(holder) {{
+  if ( holder.style.display == "none" ) {{
+    const holderstyle = window.getComputedStyle(holder);
+    const parentrect = holder.parentElement.getBoundingClientRect();
+    const holdermax = parseInt(holderstyle.width) + parentrect.left;
+    const allowedmax = window.innerWidth - 10;
+    if ( holdermax > allowedmax ) {{
+      holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
+      holder.style.right = "auto";
+    }}
+    holder.style.display = "block";
+    one_opened = true;
+  }} else {{
+    holder.style.display = "none";
+    one_opened = false;
+  }}
+}}
+
+if ( folder_btns.length ) {{
+  for ( var i = 0; i < folder_btns.length; i++ ) {{
+
+    folder_btns[i].addEventListener("click", function(){{
+      const parent = this.parentElement;
+      const holder = parent.querySelector(".holder");
+      toggleHolder(holder);
+    }});
+
+
+    folder_btns[i].addEventListener("mouseover", function(){{
+      const parent = this.parentElement;
+      const holder = parent.querySelector(".holder");
+      if ( one_opened == true ) {{
+        for ( var j = 0; j < all_holders.length; j++ ) {{
+          if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
+            all_holders[j].style.display = "none";
+          }}
+        }}
+        toggleHolder(holder);
+      }}
+    }});
+
+
+  }}
+}}
+
+document.addEventListener("click", function(){{
+  if ( !bookmarks_bar.contains(event.target) ) {{
+    for ( var j = 0; j < all_holders.length; j++ ) {{
+      all_holders[j].style.display = "none";
+      one_opened = false;
+    }}
+  }}
+}});
+
+</script>
+</body>
+</html>
+'''
+  return final_html
+
+
+def convert_bmhtml_browser(html_content):
+  # -- convert from bmhtml -> browser -- #
+  final_html = ''
+
+  title_match = re.search(r'<title\s*>(.*?)</title\s*>', html_content, re.IGNORECASE | re.DOTALL)
+  page_title  = title_match.group(1).strip() if title_match else ''
+
+  bookmarks_match = re.search(r'const bookmarks = \[(.*?)\];', html_content, re.IGNORECASE | re.DOTALL)
+  json_bookmarks  = f'[{bookmarks_match.group(1).strip()}]' if bookmarks_match else '[]'
+
+  icons_match = re.search(r'const icons = \[(.*?)\];', html_content, re.IGNORECASE | re.DOTALL)
+  json_icons  = f'[{icons_match.group(1).strip()}]' if icons_match else '[]'
+
+  json_bookmarks = json.loads(json_bookmarks)
+  json_icons = json.loads(json_icons)
+
+  converted_objects = convert_bmhtml_objects_html(json_bookmarks, json_icons)
+
+  final_html = f'''<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- Generated via bmhtml. Docs: https://github.com/ryt/bmhtml  -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>{page_title}</TITLE>
+<H1>{page_title}</H1>
+{converted_objects}
+'''
+
+  return final_html
 
 
 def process_bookmarks_file(input, output, third=''):
@@ -133,159 +373,23 @@ def process_bookmarks_file(input, output, third=''):
 
     with open(input, 'r', encoding='utf-8') as file:
       html_content = file.read()
-    parsed = parse_bookmarks(html_content)
-    bookmarks_object = json.dumps(parsed[0], indent=2)
-    icons_object = json.dumps(parsed[1], indent=1)
-    final_html = f'''<!DOCTYPE html>
-  <html>
-  <head>
-  <script>
-  const bookmarks = {bookmarks_object};
-  const icons = {icons_object};
-  </script>
-    <title>Bookmarks</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <style>
-       body {{ padding:0;margin:0; }}
-      .bookmarks-bar {{ padding:3px;border-bottom:1px solid #ccc; }}
-      .bookmarks-bar a,
-      .bookmarks-bar span {{
-        text-decoration:none;display:inline-block;padding:3px 8px 3px 4px;
-        font:12px arial;color:#333;border-radius:5px;
-      }}
-      .bookmarks-bar a:hover,
-      .bookmarks-bar span:hover {{ background:#eee; }}
-      .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle; }}
-      .bookmarks-bar span {{ cursor:pointer; }}
-      .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
-      .bookmarks-bar .holder {{ 
-        position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;
-        border:1px solid #ccc;border-radius:5px;box-shadow:1px 2px 8px #ddd;
-      }}
-      .bookmarks-bar .holder a,
-      .bookmarks-bar .holder span {{ display:block;margin:0 0 2px; }}
-      .folder {{ 
-        width:16px;height:8px;margin-right:5px;position:relative;margin-bottom:-3px;
-        border:1px solid #999;border-radius:0 2px 2px 2px;display:inline-block;
-      }}
-      .folder:before {{
-        content:'';width:80%;height:3px;border-radius:0 2px 0 0;background-color:#ccc;
-        position: absolute;top:-4px;left:-1px;
-      }}
-      @media (max-width: 580px) {{
-        .bookmarks-bar a,
-        .bookmarks-bar span {{ margin-bottom:6px; }}
-      }}
-    </style>
-  </head>
-  <body>
-  <script>
 
-  function get_icon(i) {{
-    return icons[i];
-  }}
+    convert_from = 'bmhtml'
+    if html_content[:50].strip().lower().startswith('<!doctype netscape-bookmark'):
+      convert_from = 'browser'
 
-  function process_nested_bookmarks(parent) {{
-    let bookmarks_html = ''
-    for ( const key in parent ) {{
-      const elem = parent[key];
-      if ( elem['type'] == 'link' ) {{
-        let el_name = elem['name'];
-        let el_href = elem['attrs']['href'];
-        let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : '';
-        bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
-      }} else if ( elem['type'] == 'folder' ) {{
-        let el_name = elem['name'];
-        bookmarks_html += '<div class="parent">'
-        bookmarks_html += '<span class="folder-button"><i class="folder"></i>' + el_name + '</span>';
-        if ( elem['children'] && elem['children'].length > 0 ) {{
-          bookmarks_html += '<div class="holder" style="display:none;">' + process_nested_bookmarks(elem['children']) + '</div>';
-        }}
-        bookmarks_html += '</div>';
-      }}
-    }}
-    return bookmarks_html;
-  }}
+    final_html = ''
 
-  if ( bookmarks ){{
-    let start = bookmarks[0]['children'];
-    if ( 'children' in start[0] ) {{
-      start = start[0]['children'];
-    }}
-    bookmarks_html = process_nested_bookmarks(start);
-    document.write('<div class="bookmarks-bar">' + bookmarks_html + '</div>');
-  }}
+    if convert_from == 'browser':
+      final_html = convert_browser_bmhtml(html_content)
 
-  </script>
-  <script>
-
-  const bookmarks_bar = document.querySelector(".bookmarks-bar");
-  const folder_btns   = document.querySelectorAll(".folder-button");
-  const all_holders   = document.querySelectorAll(".holder");
-  let one_opened      = false;
-
-  function toggleHolder(holder) {{
-    if ( holder.style.display == "none" ) {{
-      const holderstyle = window.getComputedStyle(holder);
-      const parentrect = holder.parentElement.getBoundingClientRect();
-      const holdermax = parseInt(holderstyle.width) + parentrect.left;
-      const allowedmax = window.innerWidth - 10;
-      if ( holdermax > allowedmax ) {{
-        holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
-        holder.style.right = "auto";
-      }}
-      holder.style.display = "block";
-      one_opened = true;
-    }} else {{
-      holder.style.display = "none";
-      one_opened = false;
-    }}
-  }}
-
-  if ( folder_btns.length ) {{
-    for ( var i = 0; i < folder_btns.length; i++ ) {{
-
-      folder_btns[i].addEventListener("click", function(){{
-        const parent = this.parentElement;
-        const holder = parent.querySelector(".holder");
-        toggleHolder(holder);
-      }});
-
-
-      folder_btns[i].addEventListener("mouseover", function(){{
-        const parent = this.parentElement;
-        const holder = parent.querySelector(".holder");
-        if ( one_opened == true ) {{
-          for ( var j = 0; j < all_holders.length; j++ ) {{
-            if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
-              all_holders[j].style.display = "none";
-            }}
-          }}
-          toggleHolder(holder);
-        }}
-      }});
-
-
-    }}
-  }}
-
-  document.addEventListener("click", function(){{
-    if ( !bookmarks_bar.contains(event.target) ) {{
-      for ( var j = 0; j < all_holders.length; j++ ) {{
-        all_holders[j].style.display = "none";
-        one_opened = false;
-      }}
-    }}
-  }});
-
-  </script>
-  </body>
-  </html>
-  '''
+    elif convert_from == 'bmhtml':
+      final_html = convert_bmhtml_browser(html_content)
     
-    out_file = ''
-    suffix   = '-bm'
-    message  = 'Writing to'
+    out_file   = ''
+    suffix     = '-bm' if convert_from == 'browser' else '-browser'
+    message    = 'Writing to'
+    conversion = 'browser -> bmhtml' if convert_from == 'browser' else 'bmhtml -> browser'
 
     if output:
       if output == 'r' or output == 'replace':
@@ -302,11 +406,12 @@ def process_bookmarks_file(input, output, third=''):
     # out_json = json.dumps(bookmarks, indent=2)
     # print(out_json)
 
-    print(f'{message} file "{out_file}" successful.')
+    print(f'{message} file "{out_file}" successful. Conversion: {conversion}.')
 
-  except:
 
+  except Exception as e:
     print(f'Sorry, the file "{input}" could not be processed.')
+    print(e)
 
 
 

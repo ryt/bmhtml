@@ -194,8 +194,8 @@ def convert_browser_bmhtml(html_content):
 <head>
 <title>{page_title}</title>
 <script>
-const bookmarks = {bookmarks_object};
-const icons = {icons_object};
+const bookmarks = {bookmarks_object}; /*=bookmarks-object-end=*/
+const icons = {icons_object}; /*=icons-object-end=*/
 </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
@@ -208,9 +208,14 @@ const icons = {icons_object};
     }}
     .bookmarks-bar a:hover,
     .bookmarks-bar span:hover {{ background:#eee; }}
-    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle; }}
+    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle;float:left; }}
+    .bookmarks-bar a::after {{ content:"";display:block;clear:both; }}
     .bookmarks-bar span {{ cursor:pointer; }}
     .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
+    .bookmarks-bar .parent .holder .parent {{ display:block; }}
+    .bookmarks-bar .parent .holder .parent .folder-button::after {{ content: "\\00276F";color:#777;float:right; }}
+    .bookmarks-bar .parent .parent:hover .folder-button {{ background:#eee; }}
+    .bookmarks-bar .placeholder {{ display:inline-block;width:0px;height:1px; }}
     .bookmarks-bar .holder {{ 
       position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;
       border:1px solid #ccc;border-radius:5px;box-shadow:1px 2px 8px #ddd;
@@ -238,15 +243,17 @@ function get_icon(i) {{
   return icons[i];
 }}
 
+const empty_img = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+
 function process_nested_bookmarks(parent) {{
   let bookmarks_html = ''
   for ( const key in parent ) {{
     const elem = parent[key];
     if ( elem['type'] == 'link' ) {{
-      let el_name = elem['name'];
+      let el_name = elem['name'] ? elem['name'] : '<strong class="placeholder"></strong>';
       let el_href = elem['attrs']['href'];
-      let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : '';
-      bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
+      let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : empty_img;
+      bookmarks_html += '<a href="' + el_href + '" target="_blank"><img src="' + el_icon + '" />' + el_name + '</a>';
     }} else if ( elem['type'] == 'folder' ) {{
       let el_name = elem['name'];
       bookmarks_html += '<div class="parent">'
@@ -283,6 +290,14 @@ function toggleHolder(holder) {{
     const parentrect = holder.parentElement.getBoundingClientRect();
     const holdermax = parseInt(holderstyle.width) + parentrect.left;
     const allowedmax = window.innerWidth - 10;
+    if ( holder.parentElement?.parentElement.classList.contains('holder') ) {{ // ancestor (grandparent) has class 'holder'
+      let folderleft = parentrect.width;
+      if ( (folderleft + parentrect.left) > allowedmax - 20 ) {{
+        folderleft = (folderleft * -1) - 20;
+      }}
+      holder.style.left = folderleft + 'px';
+      holder.style.top = '0px';
+    }}
     if ( holdermax > allowedmax ) {{
       holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
       holder.style.right = "auto";
@@ -345,10 +360,10 @@ def convert_bmhtml_browser(html_content):
   title_match = re.search(r'<title\s*>(.*?)</title\s*>', html_content, re.IGNORECASE | re.DOTALL)
   page_title  = title_match.group(1).strip() if title_match else ''
 
-  bookmarks_match = re.search(r'const bookmarks = \[(.*?)\];', html_content, re.IGNORECASE | re.DOTALL)
+  bookmarks_match = re.search(r'const bookmarks = \[(.*?)\]; \/\*=bookmarks-object-end=\*\/', html_content, re.IGNORECASE | re.DOTALL)
   json_bookmarks  = f'[{bookmarks_match.group(1).strip()}]' if bookmarks_match else '[]'
 
-  icons_match = re.search(r'const icons = \[(.*?)\];', html_content, re.IGNORECASE | re.DOTALL)
+  icons_match = re.search(r'const icons = \[(.*?)\]; \/\*=icons-object-end=\*\/', html_content, re.IGNORECASE | re.DOTALL)
   json_icons  = f'[{icons_match.group(1).strip()}]' if icons_match else '[]'
 
   json_bookmarks = json.loads(json_bookmarks)

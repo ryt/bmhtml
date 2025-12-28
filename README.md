@@ -35,10 +35,7 @@ There are three options the can be used in the `bmhtml` command in this process:
 
 ```console
 bmhtml bookmarks.html bookmarks-portable.html
-```
 ...
-
-```
 > Writing to file "bookmarks-portable.html" successful. Conversion: browser -> bmhtml.
 ```
 
@@ -48,10 +45,7 @@ bmhtml bookmarks.html bookmarks-portable.html
 
 ```console
 bmhtml bookmarks.html
-```
 ...
-
-```
 > Writing to file "bookmarks-bm.html" successful. Conversion: browser -> bmhtml.
 ```
 
@@ -63,10 +57,7 @@ bmhtml bookmarks.html
 ```console
 bmhtml bookmarks.html r
 bmhtml bookmarks.html replace
-```
 ...
-
-```console
 > Replacing file "bookmarks.html" successful. Conversion: browser -> bmhtml.
 ```
 
@@ -78,10 +69,7 @@ The instructions above can also be used to convert bmhtml files to browser bookm
 
 ```console
 bmhtml bookmarks-bm.html chrome-import.html
-```
 ...
-
-```
 > Writing to file "chrome-import.html" successful. Conversion: bmhtml -> browser.
 ```
 
@@ -90,10 +78,7 @@ bmhtml bookmarks-bm.html chrome-import.html
 ```console
 bmhtml bookmarks-bm.html
 bmhtml bookmarks.html
-```
 ...
-
-```
 > Writing to file "bookmarks-browser.html" successful. Conversion: bmhtml -> browser.
 ```
 > *If the input path has a `-bm` suffix, it'll be replaced in the ouput path as well.*
@@ -104,10 +89,7 @@ bmhtml bookmarks.html
 bmhtml bookmarks.html r
 bmhtml bookmarks-bm.html replace
 bmhtml firefox-favorites.html r
-```
 ...
-
-```
 > Replacing file "bookmarks.html" successful. Conversion: bmhtml -> browser.
 > Replacing file "bookmarks-bm.html" successful. Conversion: bmhtml -> browser.
 > Replacing file "firefox-favorites.html" successful. Conversion: bmhtml -> browser.

@@ -2,7 +2,7 @@
 
 A tool that creates a portable, optimized html bookmarks bar from your bookmark exports.
 
-#### Install
+## Install
 
 After downloading, you can call the script directly at `./bmhtml.py`.
 
@@ -16,7 +16,7 @@ alias bmhtml='{install_dir}/bmhtml/bmhtml.py'
 
 In the examples below, the command `bmhtml` is used to refer to `bmhtml.py`.
 
-#### Usage
+## Usage
 
 There are two types of bookmarks html files that are used with bmhtml:
 
@@ -25,7 +25,7 @@ There are two types of bookmarks html files that are used with bmhtml:
 
 Both conversion instructions are shown below.
 
-##### 1. Convert browser exported bookmarks html file to bmhtml file.
+### 1. Convert browser exported bookmarks html file to bmhtml file.
 
 There are three options the can be used in the `bmhtml` command in this process: 1. **specific output path**, 2. **no output path**, 3. **replace**.
 
@@ -61,7 +61,7 @@ bmhtml bookmarks.html --replace
 > Replacing file "bookmarks.html" successful. Conversion: browser -> bmhtml.
 ```
 
-##### 2. Convert bmhtml file to browser based (i.e. Netscape) bookmarks file.
+### 2. Convert bmhtml file to browser based (i.e. Netscape) bookmarks file.
 
 The instructions above can also be used to convert bmhtml files to browser bookmarks files (to import to Chrome, Firefox, Opera, etc).
 
@@ -96,11 +96,11 @@ bmhtml firefox-favorites.html -r
 ```
 
 
-##### Show the help manual
+#### Help / Manual
 
 ```console
 bmhtml
-bmhtml man|help
+bmhtml man | help
 ```
 
 

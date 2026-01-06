@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# bmhtml - cross-platform bookmarks exporter & editor
+# bmhtml - cross-platform bookmarks export for portable access
 # latest source can be found at: https://github.com/ryt/bmhtml
 
 v   = '0.1.0'

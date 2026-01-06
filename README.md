@@ -9,7 +9,7 @@ After downloading, you can call the script directly at `./bmhtml.py`.
 You can also create an alias for faster access. If you're using bash, add the following to your aliases:
 
 ```console
-alias bmhtml='{install}/bmhtml/bmhtml.py'
+alias bmhtml='{install_dir}/bmhtml/bmhtml.py'
 ```
 
 > *Note: Depending on your system, aliases may be found in `~/.bashrc`, `~/.bash_aliases` or `~/.bash_profile`. For other shells, use the corresponding config file: e.g. `~/.zshrc`.*
@@ -49,14 +49,14 @@ bmhtml bookmarks.html
 > Writing to file "bookmarks-bm.html" successful. Conversion: browser -> bmhtml.
 ```
 
-**Option 3:** If the replace option is used (i.e. `replace` or `r`) as the ouput path, the existing file is converted and replaced with the generated file.
+**Option 3:** If the replace option is used (i.e. `-r` or `--replace`) as the ouput path, the existing file is converted and replaced with the generated file.
 
-> bmhtml {input} r  
-> bmhtml {input} replace
+> bmhtml {input} -r  
+> bmhtml {input} --replace  
 
 ```console
-bmhtml bookmarks.html r
-bmhtml bookmarks.html replace
+bmhtml bookmarks.html -r
+bmhtml bookmarks.html --replace
 ...
 > Replacing file "bookmarks.html" successful. Conversion: browser -> bmhtml.
 ```
@@ -86,9 +86,9 @@ bmhtml bookmarks.html
 **Option 3:** Convert & replace existing file.
 
 ```console
-bmhtml bookmarks.html r
-bmhtml bookmarks-bm.html replace
-bmhtml firefox-favorites.html r
+bmhtml bookmarks.html -r
+bmhtml bookmarks-bm.html --replace
+bmhtml firefox-favorites.html -r
 ...
 > Replacing file "bookmarks.html" successful. Conversion: bmhtml -> browser.
 > Replacing file "bookmarks-bm.html" successful. Conversion: bmhtml -> browser.
@@ -96,7 +96,7 @@ bmhtml firefox-favorites.html r
 ```
 
 
-##### Show the help manual.
+##### Show the help manual
 
 ```console
 bmhtml
@@ -105,7 +105,5 @@ bmhtml man|help
 
 
 
-###### 
 
-<sub><sup>Copyright (C) 2024 Ray Mentose.</sup></sub>
 

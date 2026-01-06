@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 # bmhtml - cross-platform bookmarks exporter & editor
-# Latest source can be found at: https://github.com/ryt/bmhtml
+# latest source can be found at: https://github.com/ryt/bmhtml
 
-v = '0.1.0'
-c = 'copyright (c) 2024 ray mentose'
-man = """
+v   = '0.1.0'
+man = '''
 bmhtml: A tool that creates a portable, optimized, cross-browser html bookmarks-bar from your bookmark exports.
 Latest source & docs: https://github.com/ryt/bmhtml
 
@@ -17,7 +16,7 @@ Usage:
   ---------------------------------------------------------
   ./bmhtml.py     bookmarks.html    bookmarks-portable.html
   ./bmhtml.py     bookmarks.html
-  ./bmhtml.py     bookmarks.html    r | replace
+  ./bmhtml.py     bookmarks.html    -r | --replace
 
 
   Help manual and version.
@@ -25,7 +24,7 @@ Usage:
   ./bmhtml.py     (man|help|-h|--help)
   ./bmhtml.py     (-v|--version)
 
-"""
+'''
 
 # --- libraries --- #
 
@@ -66,7 +65,7 @@ def convert_bmhtml_objects_html(bookmarks, uicons, i=1):
   '''
   tab  = ('  '*i)
   html = ''
-  if bookmarks and uicons:
+  if bookmarks:
     for bk in bookmarks:
       if bk.get('type') == 'folder':
         if not bk.get('name') and not bk.get('attrs'): # main outer DL: no name, no attrs
@@ -208,7 +207,7 @@ const icons = {icons_object}; /*=icons-object-end=*/
     }}
     .bookmarks-bar a:hover,
     .bookmarks-bar span:hover {{ background:#eee; }}
-    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle;float:left; }}
+    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle;float:left;max-width:16px; }}
     .bookmarks-bar a::after {{ content:"";display:block;clear:both; }}
     .bookmarks-bar span {{ cursor:pointer; }}
     .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
@@ -406,7 +405,7 @@ def process_bookmarks_file(input, output, third=''):
     conversion = 'browser -> bmhtml' if convert_from == 'browser' else 'bmhtml -> browser'
 
     if output:
-      if output == 'r' or output == 'replace':
+      if output == '-r' or output == '--replace':
         out_file = input
         message  = 'Replacing'
       else:

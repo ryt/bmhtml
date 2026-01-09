@@ -3,8 +3,9 @@
 # bmhtml - cross-platform bookmarks export for portable access
 # latest source can be found at: https://github.com/ryt/bmhtml
 
-v   = '0.1.0'
-man = '''
+__author__  = 'Ray (github.com/ryt)'
+__version__ = '0.1.1.dev0'
+__manual__  = '''
 bmhtml: A tool that creates a portable, optimized, cross-browser html bookmarks-bar from your bookmark exports.
 Latest source & docs: https://github.com/ryt/bmhtml
 
@@ -252,7 +253,7 @@ function process_nested_bookmarks(parent) {{
       let el_name = elem['name'] ? elem['name'] : '<strong class="placeholder"></strong>';
       let el_href = elem['attrs']['href'];
       let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : empty_img;
-      bookmarks_html += '<a href="' + el_href + '"><img src="' + el_icon + '" />' + el_name + '</a>';
+      bookmarks_html += '<a href="' + el_href + '" rel="noreferrer"><img src="' + el_icon + '" />' + el_name + '</a>';
     }} else if ( elem['type'] == 'folder' ) {{
       let el_name = elem['name'];
       bookmarks_html += '<div class="parent">'
@@ -431,13 +432,16 @@ def process_bookmarks_file(input, output, third=''):
 def main():
 
   if len(sys.argv) == 1:
-    return print(f'{man.strip()}\n')
+    return print(f'{__manual__.strip()}\n')
 
   elif sys.argv[1] in ('-v','--version'):
-    return print(f'Version: {v}')
+    return print(f'Version: {__version__}')
+
+  elif sys.argv[1] in ('-a','--author'):
+    return print(f'Author: {__author__}')
 
   elif sys.argv[1] in ('man','help','-h','--help'):
-    return print(f'{man.strip()}\n')
+    return print(f'{__manual__.strip()}\n')
 
   elif sys.argv[1]:
     process_bookmarks_file(

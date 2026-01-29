@@ -4,7 +4,7 @@
 # latest source can be found at: https://github.com/ryt/bmhtml
 
 __author__  = 'Ray (github.com/ryt)'
-__version__ = '0.1.1.dev0'
+__version__ = '0.1.1-dev1'
 __manual__  = '''
 bmhtml: A tool that creates a portable, optimized, cross-browser html bookmarks-bar from your bookmark exports.
 Latest source & docs: https://github.com/ryt/bmhtml
@@ -34,6 +34,7 @@ import re
 import sys
 import json
 
+from string import Template
 
 # --- cli mode --- #
 
@@ -58,6 +59,7 @@ def attrs_to_html(attrs):
 
 
 def convert_bmhtml_objects_html(bookmarks, uicons, i=1):
+  # -- converts bmhtml object (json/dict) to html -- #
   '''
   <DL><p> (opens folder)
     <DT><H3 {attrs}>{name}</H3> (folders, no closing DT)
@@ -85,6 +87,7 @@ def convert_bmhtml_objects_html(bookmarks, uicons, i=1):
 
 
 def parse_bookmarks(html):
+  # -- converts browser (netscape) bookmarks html file -> parsed object (bookmarks{}, icons{}, title) -- #
   bookmarks = []
   stack     = []
   headers   = []
@@ -184,97 +187,98 @@ def parse_bookmarks(html):
 
 
 def convert_browser_bmhtml(html_content):
-  # -- convert from browser -> bmhtml -- #
+  # -- converts browser (netscape) bookmarks html file -> parsed object -> bmhtml file -- #
   parsed = parse_bookmarks(html_content)
   bookmarks_object = json.dumps(parsed[0], indent=2)
   icons_object = json.dumps(parsed[1], indent=1)
   page_title = parsed[2]
-  final_html = f'''<!DOCTYPE html>
+  final_temp = Template('''<!DOCTYPE html>
 <html>
 <head>
-<title>{page_title}</title>
+<title>${page_title}</title>
 <script>
-const bookmarks = {bookmarks_object}; /*=bookmarks-object-end=*/
-const icons = {icons_object}; /*=icons-object-end=*/
+const bookmarks = ${bookmarks_object}; /*=bookmarks-object-end=*/
+const icons = ${icons_object}; /*=icons-object-end=*/
 </script>
+  <meta name="robots" content="noindex,noodp,nofollow">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <style>
-     body {{ padding:0;margin:0; }}
-    .bookmarks-bar {{ padding:3px;border-bottom:1px solid #ccc; }}
+     body { padding:0;margin:0; }
+    .bookmarks-bar { padding:3px;border-bottom:1px solid #ccc; }
     .bookmarks-bar a,
-    .bookmarks-bar span {{
+    .bookmarks-bar span {
       text-decoration:none;display:inline-block;padding:3px 8px 3px 4px;
       font:12px arial;color:#333;border-radius:5px;
-    }}
+    }
     .bookmarks-bar a:hover,
-    .bookmarks-bar span:hover {{ background:#eee; }}
-    .bookmarks-bar a img {{ margin-right:5px;vertical-align:middle;float:left;max-width:16px; }}
-    .bookmarks-bar a::after {{ content:"";display:block;clear:both; }}
-    .bookmarks-bar span {{ cursor:pointer; }}
-    .bookmarks-bar .parent {{ display:inline-block;position:relative; }}
-    .bookmarks-bar .parent .holder .parent {{ display:block; }}
-    .bookmarks-bar .parent .holder .parent .folder-button::after {{ content: "\\00276F";color:#777;float:right; }}
-    .bookmarks-bar .parent .parent:hover .folder-button {{ background:#eee; }}
-    .bookmarks-bar .placeholder {{ display:inline-block;width:0px;height:1px; }}
-    .bookmarks-bar .holder {{ 
+    .bookmarks-bar span:hover { background:#eee; }
+    .bookmarks-bar a img { margin-right:5px;vertical-align:middle;float:left;max-width:16px; }
+    .bookmarks-bar a::after { content:"";display:block;clear:both; }
+    .bookmarks-bar span { cursor:pointer; }
+    .bookmarks-bar .parent { display:inline-block;position:relative; }
+    .bookmarks-bar .parent .holder .parent { display:block; }
+    .bookmarks-bar .parent .holder .parent .folder-button::after { content: "\\00276F";color:#777;float:right; }
+    .bookmarks-bar .parent .parent:hover .folder-button { background:#eee; }
+    .bookmarks-bar .placeholder { display:inline-block;width:0px;height:1px; }
+    .bookmarks-bar .holder { 
       position:absolute;top:25px;left:0px;z-index:1;background:#fff;width:250px;padding:8px;
       border:1px solid #ccc;border-radius:5px;box-shadow:1px 2px 8px #ddd;
-    }}
+    }
     .bookmarks-bar .holder a,
-    .bookmarks-bar .holder span {{ display:block;margin:0 0 2px; }}
-    .folder {{ 
+    .bookmarks-bar .holder span { display:block;margin:0 0 2px; }
+    .folder { 
       width:16px;height:8px;margin-right:5px;position:relative;margin-bottom:-3px;
       border:1px solid #999;border-radius:0 2px 2px 2px;display:inline-block;
-    }}
-    .folder:before {{
+    }
+    .folder:before {
       content:'';width:80%;height:3px;border-radius:0 2px 0 0;background-color:#ccc;
       position: absolute;top:-4px;left:-1px;
-    }}
-    @media (max-width: 580px) {{
+    }
+    @media (max-width: 580px) {
       .bookmarks-bar a,
-      .bookmarks-bar span {{ margin-bottom:6px; }}
-    }}
+      .bookmarks-bar span { margin-bottom:6px; }
+    }
   </style>
 </head>
 <body>
 <script>
 
-function get_icon(i) {{
+function get_icon(i) {
   return icons[i];
-}}
+}
 
 const empty_img = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
-function process_nested_bookmarks(parent) {{
+function process_nested_bookmarks(parent) {
   let bookmarks_html = ''
-  for ( const key in parent ) {{
+  for ( const key in parent ) {
     const elem = parent[key];
-    if ( elem['type'] == 'link' ) {{
+    if ( elem['type'] == 'link' ) {
       let el_name = elem['name'] ? elem['name'] : '<strong class="placeholder"></strong>';
       let el_href = elem['attrs']['href'];
       let el_icon = 'icon' in elem['attrs'] ? get_icon(elem['attrs']['icon']) : empty_img;
-      bookmarks_html += '<a href="' + el_href + '" rel="noreferrer"><img src="' + el_icon + '" />' + el_name + '</a>';
-    }} else if ( elem['type'] == 'folder' ) {{
+      bookmarks_html += '<a href="' + el_href + '" rel="nofollow noopener noreferrer"><img src="' + el_icon + '" />' + el_name + '</a>';
+    } else if ( elem['type'] == 'folder' ) {
       let el_name = elem['name'];
       bookmarks_html += '<div class="parent">'
       bookmarks_html += '<span class="folder-button"><i class="folder"></i>' + el_name + '</span>';
-      if ( elem['children'] && elem['children'].length > 0 ) {{
+      if ( elem['children'] && elem['children'].length > 0 ) {
         bookmarks_html += '<div class="holder" style="display:none;">' + process_nested_bookmarks(elem['children']) + '</div>';
-      }}
+      }
       bookmarks_html += '</div>';
-    }}
-  }}
+    }
+  }
   return bookmarks_html;
-}}
+}
 
-if ( bookmarks ){{
+if ( bookmarks ){
   let start = bookmarks[0]['children'];
-  if ( 'children' in start[0] ) {{
+  if ( 'children' in start[0] ) {
     start = start[0]['children'];
-  }}
+  }
   bookmarks_html = process_nested_bookmarks(start);
   document.write('<div class="bookmarks-bar">' + bookmarks_html + '</div>');
-}}
+}
 
 </script>
 <script>
@@ -284,78 +288,83 @@ const folder_btns   = document.querySelectorAll(".folder-button");
 const all_holders   = document.querySelectorAll(".holder");
 let one_opened      = false;
 
-function toggleHolder(holder) {{
-  if ( holder.style.display == "none" ) {{
+function toggleHolder(holder) {
+  if ( holder.style.display == "none" ) {
     const holderstyle = window.getComputedStyle(holder);
     const parentrect = holder.parentElement.getBoundingClientRect();
     const holdermax = parseInt(holderstyle.width) + parentrect.left;
     const allowedmax = window.innerWidth - 10;
-    if ( holder.parentElement?.parentElement.classList.contains('holder') ) {{ // ancestor (grandparent) has class 'holder'
+    if ( holder.parentElement?.parentElement.classList.contains('holder') ) { // ancestor (grandparent) has class 'holder'
       let openfolder_maxright = parentrect.width + holdermax;
-      if ( openfolder_maxright < allowedmax ) {{
+      if ( openfolder_maxright < allowedmax ) {
         holder.style.left = parentrect.width + 'px';
         holder.style.top = '0px';
-      }}
-    }}
-    if ( holdermax > allowedmax ) {{
+      }
+    }
+    if ( holdermax > allowedmax ) {
       holder.style.left = ( -1 * ( holdermax - allowedmax + 20 ) ) + "px";
       holder.style.right = "auto";
-    }}
+    }
     holder.style.display = "block";
     one_opened = true;
-  }} else {{
+  } else {
     holder.style.display = "none";
     one_opened = false;
-  }}
-}}
+  }
+}
 
-if ( folder_btns.length ) {{
-  for ( var i = 0; i < folder_btns.length; i++ ) {{
+if ( folder_btns.length ) {
+  for ( var i = 0; i < folder_btns.length; i++ ) {
 
-    folder_btns[i].addEventListener("click", function(){{
+    folder_btns[i].addEventListener("click", function(){
       const parent = this.parentElement;
       const holder = parent.querySelector(".holder");
       toggleHolder(holder);
-    }});
+    });
 
 
-    folder_btns[i].addEventListener("mouseover", function(){{
+    folder_btns[i].addEventListener("mouseover", function(){
       const parent = this.parentElement;
       const holder = parent.querySelector(".holder");
-      if ( one_opened == true ) {{
-        for ( var j = 0; j < all_holders.length; j++ ) {{
-          if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {{
+      if ( one_opened == true ) {
+        for ( var j = 0; j < all_holders.length; j++ ) {
+          if ( all_holders[j] == holder || !all_holders[j].contains(holder) ) {
             all_holders[j].style.display = "none";
-          }}
-        }}
+          }
+        }
         toggleHolder(holder);
-      }}
-    }});
+      }
+    });
 
 
-  }}
-}}
+  }
+}
 
-document.addEventListener("click", function(){{
-  if ( !bookmarks_bar.contains(event.target) ) {{
-    for ( var j = 0; j < all_holders.length; j++ ) {{
+document.addEventListener("click", function(){
+  if ( !bookmarks_bar.contains(event.target) ) {
+    for ( var j = 0; j < all_holders.length; j++ ) {
       all_holders[j].style.display = "none";
       one_opened = false;
-    }}
-  }}
-}});
+    }
+  }
+});
 
 </script>
 </body>
 </html>
-'''
+''')
+
+  final_data = {
+    'page_title': page_title,
+    'bookmarks_object': bookmarks_object,
+    'icons_object': icons_object,
+  }
+  final_html = final_temp.substitute(final_data)
   return final_html
 
 
 def convert_bmhtml_browser(html_content):
   # -- convert from bmhtml -> browser -- #
-  final_html = ''
-
   title_match = re.search(r'<title\s*>(.*?)</title\s*>', html_content, re.IGNORECASE | re.DOTALL)
   page_title  = title_match.group(1).strip() if title_match else ''
 
@@ -370,14 +379,19 @@ def convert_bmhtml_browser(html_content):
 
   converted_objects = convert_bmhtml_objects_html(json_bookmarks, json_icons)
 
-  final_html = f'''<!DOCTYPE NETSCAPE-Bookmark-file-1>
+  final_temp = Template('''<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <!-- Generated via bmhtml. Docs: https://github.com/ryt/bmhtml  -->
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
-<TITLE>{page_title}</TITLE>
-<H1>{page_title}</H1>
-{converted_objects}
-'''
+<TITLE>${page_title}</TITLE>
+<H1>${page_title}</H1>
+${converted_objects}
+''')
 
+  final_data = {
+    'page_title': page_title,
+    'converted_objects': converted_objects,
+  }
+  final_html = final_temp.substitute(final_data)
   return final_html
 
 
@@ -414,11 +428,11 @@ def process_bookmarks_file(input, output, third=''):
     else:
       out_file = re.sub(r'(-(bm|browser))?\.html', '', input) + suffix + '.html'
     
+    # debugging:
+    # return print(final_html)
+
     with open(out_file, 'w', encoding='utf-8') as f:
       f.writelines(final_html)
-
-    # out_json = json.dumps(bookmarks, indent=2)
-    # print(out_json)
 
     print(f'{message} file "{out_file}" successful. Conversion: {conversion}.')
 
